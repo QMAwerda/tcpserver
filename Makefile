@@ -8,17 +8,47 @@
 # CC: buildCC
 # 	@./obj
 
-tcpserver: server.o client.o main.o
-	g++ -o compiled/tcpserver compiled/server.o compiled/client.o compiled/main.o
+CXX       := g++
+CXX_FLAGS := -Wall -Wextra -std=c++17 -ggdb
 
-main.o: src/main.cpp
-	g++ -c src/main.cpp -o compiled/main.o
+BIN     := compiled
+BIN_EXECUTABLE  := $(BIN)/app
+SRC     := src
 
-server.o: src/server.cpp src/server.hpp
-	g++ -c src/server.cpp -o compiled/server.o
+.DEFAULT_GOAL = all
 
-client.o: src/client.cpp src/client.hpp
-	g++ -c src/client.cpp -o compiled/client.o
+tcpclient: client.o mainclient.o
+	@$(CXX) $(CXX_FLAGS) -o $(BIN_EXECUTABLE)/tcpclient $(BIN)/client.o $(BIN)/mainclient.o
 
-all: tcpserver
-	./compiled/tcpserver
+tcpserver: server.o mainserver.o
+	@$(CXX) $(CXX_FLAGS) -o $(BIN_EXECUTABLE)/tcpserver $(BIN)/server.o $(BIN)/mainserver.o
+
+mainclient.o: $(SRC)/mainclient.cpp
+	@$(CXX) $(CXX_FLAGS) -c $(SRC)/mainclient.cpp -o $(BIN)/mainclient.o
+
+mainserver.o: $(SRC)/mainserver.cpp
+	@$(CXX) $(CXX_FLAGS) -c $(SRC)/mainserver.cpp -o $(BIN)/mainserver.o
+
+server.o: $(SRC)/server.cpp $(SRC)/server.hpp
+	@$(CXX) $(CXX_FLAGS) -c $(SRC)/server.cpp -o $(BIN)/server.o
+
+client.o: $(SRC)/client.cpp $(SRC)/client.hpp
+	@$(CXX) $(CXX_FLAGS) -c $(SRC)/client.cpp -o $(BIN)/client.o
+
+makedir:
+	@mkdir $(BIN)
+	@mkdir $(BIN_EXECUTABLE)
+
+clean:
+	@echo "\nAll compiled files all deleted. Write: 'make' to compile"
+	@rm -rf $(BIN)
+
+all: makedir tcpserver tcpclient
+	@echo "\nAll files are compiled. Write: 'make startserver' / 'make startclient' to launch"
+	@echo "Write 'make clean' to delete all compiled files"
+
+startserver:
+	./$(BIN_EXECUTABLE)/tcpserver
+
+startclient:
+	./$(BIN_EXECUTABLE)/tcpclient

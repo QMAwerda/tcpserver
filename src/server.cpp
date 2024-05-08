@@ -46,6 +46,9 @@ void Server::handleRequest() {
       bytes_read = recv(handlerSocket, buf, 1024, 0);
       if (bytes_read <= 0)
         break;
+      else { // добавил сейчас
+        std::cout << " server got message " << buf << "\n";
+      }
       send(handlerSocket, buf, bytes_read, 0);
     }
     close(handlerSocket);
