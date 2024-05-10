@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../../configs/serverconf.hpp"
+
 #include <arpa/inet.h>
 #include <iostream>
 #include <netdb.h>
@@ -49,7 +51,7 @@ class Client {
 public:
   Client();
   int MakeConnection();
-  void SendMessage(int clientSocket);
+  void SendMessage(int soc);
   ~Client();
 };
 } // namespace client
