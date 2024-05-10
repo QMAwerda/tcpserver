@@ -1,10 +1,14 @@
 #pragma once
 
+#include "../../../configs/serverconf.hpp"
+// Путь выше строится от файла (сначала три раза идем наверх .., потом заходим в
+// директорию)
 #include <arpa/inet.h>
 #include <iostream>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 namespace server {
@@ -37,12 +41,13 @@ public:
 } // namespace exceptions
 
 class Server {
-  int socketListener = -1;
+  int socketListener;
   sockaddr_in sockaddr_ipv4;
 
 public:
+  // Создание сокета слушателя в конструкторе и уничтожение в деструкторе
+  // подводит нас к идиоме RAII
   Server();
-  void startListening();
   void handleRequest();
   ~Server();
 };
