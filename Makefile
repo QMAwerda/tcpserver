@@ -19,11 +19,16 @@ SRC_SERVER := server
 
 .DEFAULT_GOAL = all
 
-tcpclient: client.o mainclient.o
-	@$(CXX) $(CXX_FLAGS) -o $(BIN_EXECUTABLE)/tcpclient $(BIN)/client.o $(BIN)/mainclient.o
+# Стоит добавить сборку serverconf.cpp и попробовать корректно слинковать ее с файлами server и client
 
-tcpserver: server.o mainserver.o
-	@$(CXX) $(CXX_FLAGS) -o $(BIN_EXECUTABLE)/tcpserver $(BIN)/server.o $(BIN)/mainserver.o
+serverconf.o: configs/serverconf.cpp configs/serverconf.hpp
+	@$(CXX) $(CXX_FLAGS) -c configs/serverconf.cpp -o $(BIN)/serverconf.o
+
+tcpclient: serverconf.o client.o mainclient.o
+	@$(CXX) $(CXX_FLAGS) -o $(BIN_EXECUTABLE)/tcpclient $(BIN)/client.o $(BIN)/mainclient.o $(BIN)/serverconf.o
+
+tcpserver: serverconf.o server.o mainserver.o
+	@$(CXX) $(CXX_FLAGS) -o $(BIN_EXECUTABLE)/tcpserver $(BIN)/server.o $(BIN)/mainserver.o $(BIN)/serverconf.o
 
 mainclient.o: $(SRC)/$(SRC_CLIENT)/mainclient.cpp
 	@$(CXX) $(CXX_FLAGS) -c $(SRC)/$(SRC_CLIENT)/mainclient.cpp -o $(BIN)/mainclient.o
@@ -45,7 +50,7 @@ clean:
 	@echo "\nAll compiled files all deleted. Write: 'make' to compile"
 	@rm -rf $(BIN)
 
-all: makedir tcpserver tcpclient
+all: clean makedir tcpserver tcpclient
 	@echo "\nAll files are compiled. Write: 'make startserver' / 'make startclient' to launch"
 	@echo "Write 'make clean' to delete all compiled files"
 

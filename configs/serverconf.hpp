@@ -3,10 +3,11 @@
 #include <cstring>
 #include <netinet/in.h>
 
-const int SERVER_PORT = 54321;
+//  Делаем внешнее связывание, чтобы не переопределять переменные в каждом
+//  файле, куда они подключаются
 
-const struct sockaddr_in server_addr = {
-    .sin_family = AF_INET,
-    .sin_port = htons(SERVER_PORT),
-    .sin_addr = INADDR_ANY,
-    .sin_zero = {0}}; // аттавизм, инициализирую нулями
+extern const int SERVER_PORT;
+
+extern const struct sockaddr_in SERVER_ADDR;
+
+// extern const struct sockaddr_in SERV_ADDR;

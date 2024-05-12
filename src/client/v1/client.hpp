@@ -46,7 +46,7 @@ public:
 
 class Client {
   int fd;
-  sockaddr_in sockaddr_ipv4;
+  sockaddr_in servaddr = SERVER_ADDR; // Эта структура из configs/serverconf.hpp
 
 public:
   Client();

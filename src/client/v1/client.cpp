@@ -7,45 +7,58 @@
 namespace client {
 
 // TODO: сделать закрытие сокета через умный указатель, нежели закрывать сокет и
-// бросать исключение Реализовать возможность получения сокета через ip или имя
-// `gethostbyname()`, `gethostbyaddr()`
+// бросать исключение
+
+// Реализовать возможность получения сокета через ip или имя
+//  `gethostbyname()`, `gethostbyaddr()`
+
+// while buf != "/stop" {
+// read from tre cli
+// send it
+// server will back reversed string
+// cli return me reversed string
+//}
+
 int Client::MakeConnection() {
   int soc;
-  sockaddr_in addr; //
 
   soc = socket(AF_INET, SOCK_STREAM, 0);
   if (soc < 0) {
     throw exceptions::ClCantCreateSocket();
   }
-
-  // Странно. С одной стороны, мы ниже создаем словно наш сокет сервера, чтобы
-  // по нему связаться. Это потому, что используем тот же порт. Однако, там
-  // INADDR_ANY, а тут LOOPBACK. В чем дело?
-
-  // Моя гипотеза в том, что две эти структуры разные, но смысл в них тот же.
-  // ОДна нужна серверу, принимать соединения со всех айпи. А эта нужна клиенту,
-  // отправлять данные но только на внетреннюю петлю, чтобы они попали на сервер
-  // без выхода в сеть. Таким образом это надо Конфигурировать или двумя
-  // файлами, или задавать этот параметр отдельно на сервере и клиенте. Либо
-  // Пробовать ставить INADDR-ANY и тестить. До конца не понимаю, что значит
-  // LOOPBACK. Ну да, данные попавшие на него Сразу летят обратно, на порт 54321
-  // (Кстати, он уникален для системы или для приложения? Думаю что для системы)
-  // Таким образом мы просто не пускаем данные в сеть. Тогда если ставить
-  // LOOPBACK у сервака, все будет работать. Это надо проверить. А при ANY,
-  // данные попадут в сеть? Куда, если я не указывал никакого айпи? А если укажу
-  // LOOPBACK IP, то будет то же самое? Или ANY конретно для сервера и работает
-  // только при слушании, игнорируя отправку?
-  addr.sin_family = AF_INET;                     //
-  addr.sin_port = htons(54321);                  //
-  addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); //
-
+  std::cout << "client socket is ready, num sock = " << soc << "\n";
   // Тут идет подключение к сокету слушателю, который в своем методое accept
   // создает новый дескриптор сокета обработчика и возвращает его нам сюда. А
   // далее мы на него посылаем все запросы.
-  if (connect(soc, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+
+  // servaddr.sin_addr.s_addr = ntohl(INADDR_LOOPBACK);
+  //
+  sockaddr_in bound_addr;
+  socklen_t bound_addr_len = sizeof(bound_addr);
+
+  // мне нравится идея использовать эту функцию, чтобы узнать инфу о клиенте с
+  // сервера, но не думаю, что это возможно, посколько процессы разные и
+  // дескрипторы на сервере не будут соответвовать дескрипторам на клиенте
+  // поэтому сервер или выведет инфу своего дескриптора, или выдаст ошибку о
+  // ненаходе (полагаю, что так)
+  if (getsockname(soc, (struct sockaddr *)&bound_addr, &bound_addr_len) < 0) {
+    perror("getsockname");
+  } else {
+    std::cout << "Socket bound to address: " << inet_ntoa(bound_addr.sin_addr)
+              << " port: " << ntohs(bound_addr.sin_port) << std::endl;
+  }
+  //
+
+  // Вот это то соединение у меня и не получается сделать
+  std::cout << "serv_port (htohs) = " << ntohs(servaddr.sin_port) << "\n";
+  std::cout << "sin_fam = " << servaddr.sin_family << "\n";
+  std::cout << "sin_addr.s_addr = " << servaddr.sin_addr.s_addr << "\n";
+  std::cout << "sin_zero = " << servaddr.sin_zero << "\n";
+  if (connect(soc, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
     throw exceptions::ClCantConnectToServer();
   }
 
+  std::cout << "Client made connection\n";
   return soc;
 }
 

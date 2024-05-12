@@ -42,7 +42,7 @@ public:
 
 class Server {
   int socketListener;
-  sockaddr_in sockaddr_ipv4;
+  sockaddr_in sockaddr = SERVER_ADDR; // Эта структура из configs/serverconf.hpp
 
 public:
   // Создание сокета слушателя в конструкторе и уничтожение в деструкторе
