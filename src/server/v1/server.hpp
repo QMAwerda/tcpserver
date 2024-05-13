@@ -1,8 +1,7 @@
 #pragma once
 
 #include "../../../configs/serverconf.hpp"
-// Путь выше строится от файла (сначала три раза идем наверх .., потом заходим в
-// директорию)
+
 #include <arpa/inet.h>
 #include <iostream>
 #include <netdb.h>

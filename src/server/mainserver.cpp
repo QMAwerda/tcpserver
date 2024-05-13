@@ -2,7 +2,6 @@
 
 int main() {
   try {
-    // Create socket and bind it with port, start listening
     server::Server tcp_server;
 
     tcp_server.handleRequest();
