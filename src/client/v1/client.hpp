@@ -46,12 +46,13 @@ public:
 
 class Client {
   int fd;
-  sockaddr_in servaddr = SERVER_ADDR; // Эта структура из configs/serverconf.hpp
+  sockaddr_in servaddr = SERVER_ADDR;
 
 public:
   Client();
   int MakeConnection();
-  void SendMessage(int soc);
+  void SendHello(int soc);
+  void StartChat(int soc);
   ~Client();
 };
 } // namespace client

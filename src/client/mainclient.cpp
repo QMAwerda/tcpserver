@@ -4,7 +4,8 @@ int main() {
   try {
     client::Client my_client;
 
-    my_client.SendMessage(my_client.MakeConnection());
+    // my_client.SendHello(my_client.MakeConnection());
+    my_client.StartChat(my_client.MakeConnection());
 
   } catch (client::exceptions::ClCantConnectToServer &err) {
     std::cout << err.what();

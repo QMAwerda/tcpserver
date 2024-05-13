@@ -3,21 +3,12 @@
 #include <cstdlib>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 namespace client {
 
 // TODO: сделать закрытие сокета через умный указатель, нежели закрывать сокет и
 // бросать исключение
-
-// Реализовать возможность получения сокета через ip или имя
-//  `gethostbyname()`, `gethostbyaddr()`
-
-// while buf != "/stop" {
-// read from tre cli
-// send it
-// server will back reversed string
-// cli return me reversed string
-//}
 
 int Client::MakeConnection() {
   int soc;
@@ -26,52 +17,25 @@ int Client::MakeConnection() {
   if (soc < 0) {
     throw exceptions::ClCantCreateSocket();
   }
-  std::cout << "client socket is ready, num sock = " << soc << "\n";
-  // Тут идет подключение к сокету слушателю, который в своем методое accept
-  // создает новый дескриптор сокета обработчика и возвращает его нам сюда. А
-  // далее мы на него посылаем все запросы.
 
-  // servaddr.sin_addr.s_addr = ntohl(INADDR_LOOPBACK);
-  //
-  sockaddr_in bound_addr;
-  socklen_t bound_addr_len = sizeof(bound_addr);
-
-  // мне нравится идея использовать эту функцию, чтобы узнать инфу о клиенте с
-  // сервера, но не думаю, что это возможно, посколько процессы разные и
-  // дескрипторы на сервере не будут соответвовать дескрипторам на клиенте
-  // поэтому сервер или выведет инфу своего дескриптора, или выдаст ошибку о
-  // ненаходе (полагаю, что так)
-  if (getsockname(soc, (struct sockaddr *)&bound_addr, &bound_addr_len) < 0) {
-    perror("getsockname");
-  } else {
-    std::cout << "Socket bound to address: " << inet_ntoa(bound_addr.sin_addr)
-              << " port: " << ntohs(bound_addr.sin_port) << std::endl;
-  }
-  //
-
-  // Вот это то соединение у меня и не получается сделать
-  std::cout << "serv_port (htohs) = " << ntohs(servaddr.sin_port) << "\n";
-  std::cout << "sin_fam = " << servaddr.sin_family << "\n";
-  std::cout << "sin_addr.s_addr = " << servaddr.sin_addr.s_addr << "\n";
-  std::cout << "sin_zero = " << servaddr.sin_zero << "\n";
   if (connect(soc, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
     throw exceptions::ClCantConnectToServer();
   }
 
-  std::cout << "Client made connection\n";
   return soc;
 }
 
-void Client::SendMessage(int soc) {
-  char message[] = "MyClientMessage\n";
-  char buf[sizeof(message)];
+void Client::SendHello(int soc) {
+  char message[] = "Hello from client\n";
   if (send(soc, message, sizeof(message), 0) < 0) {
     close(soc);
     throw exceptions::ClCantSendMessage();
   }
 
-  int res = recv(soc, buf, sizeof(message), 0);
-  if (res < 0) { // ошибка
+  // 25 - Чтобы добавить сообщение от сервера "i got message"
+  char buf[sizeof(message) + 25];
+  int res = recv(soc, buf, sizeof(message) + 25, 0);
+  if (res == -1) { // ошибка
     close(soc);
     throw exceptions::ClCantRecvFromServer();
   } else if (res == 0) { // соединение закрыто другой стороной
@@ -80,6 +44,62 @@ void Client::SendMessage(int soc) {
   } else if (res > 0) { // res - число прочитанных байт
     std::cout << buf;
   }
+  close(soc);
+}
+
+void Client::StartChat(int soc) {
+  std::cout << "[Client ready to send messages. Write STOP to stop]\n";
+  while (true) {
+    // std::cout << "while\n";
+    //  получить строку с консоли
+    //  перевести ее в буфер который создам (динамически)
+    //  отправить, считать в другой буфер
+    //  удалить буфер отправки
+    //  очистить буфер получения
+
+    std::string input;
+
+    std::getline(std::cin, input);
+
+    if (input == "STOP") {
+      break;
+    }
+
+    // Преобразование std::string в char[]:
+    const char *buffer = input.c_str();
+
+    // Длина строки (без терминирующего нуля):
+    size_t length = input.length();
+
+    // std::cout << "client send msg [" << input << "]\n";
+
+    // char message[] = "Hello from client\n";
+    if (send(soc, buffer, length + 1, 0) < 0) {
+      close(soc);
+      throw exceptions::ClCantSendMessage();
+    }
+
+    // 25 - Чтобы добавить сообщение от сервера "i got message"
+
+    char *buf = new char[input.length() + 25];
+    int res = recv(soc, buf, input.length() + 25, 0);
+    if (res == -1) { // ошибка
+      close(soc);
+      throw exceptions::ClCantRecvFromServer();
+    } else if (res == 0) { // соединение закрыто другой стороной
+      close(soc);
+      throw exceptions::ClLostConnection();
+    } else if (res > 0) { // res - число прочитанных байт
+      // std::cout << "rec bytes > 0\n";
+      // std::cout << "buf[0] = " << buf[0] << "\n";
+      // std::cout << "buf[1] = " << buf[1] << "\n";
+      // std::cout << "buf[2] = " << buf[2] << "\n";
+      std::cout << "get from server: " << buf << "\n";
+    }
+
+    delete[] buf;
+  }
+  std::cout << "[Client is stopped]\n";
   close(soc);
 }
 

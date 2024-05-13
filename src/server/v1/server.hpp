@@ -42,11 +42,9 @@ public:
 
 class Server {
   int socketListener;
-  sockaddr_in sockaddr = SERVER_ADDR; // Эта структура из configs/serverconf.hpp
+  sockaddr_in sockaddr = SERVER_ADDR;
 
 public:
-  // Создание сокета слушателя в конструкторе и уничтожение в деструкторе
-  // подводит нас к идиоме RAII
   Server();
   void handleRequest();
   ~Server();

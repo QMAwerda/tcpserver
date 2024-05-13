@@ -1,4 +1,5 @@
 #include "server.hpp"
+#include <ctime>
 
 namespace server {
 // Create socket and bind it with port, start listen
@@ -8,7 +9,6 @@ Server::Server() {
   if (socketListener == -1) {
     throw exceptions::CantCreateSocket();
   }
-  std::cout << "Socket listener = " << socketListener << "\n";
 
   // Привязали адрес сокета к ipv4, порту и дали адрес на INADDR_ANY, чтобы
   // слушать с любого айпи
@@ -23,25 +23,12 @@ Server::Server() {
     throw exceptions::CantBindSocket();
   }
 
-  //
-  sockaddr_in bound_addr;
-  socklen_t bound_addr_len = sizeof(bound_addr);
-
-  if (getsockname(socketListener, (struct sockaddr *)&bound_addr,
-                  &bound_addr_len) < 0) {
-    perror("getsockname");
-  } else {
-    std::cout << "Socket bound to address: " << inet_ntoa(bound_addr.sin_addr)
-              << " port: " << ntohs(bound_addr.sin_port) << std::endl;
-  }
-  //
-
   // Начали слушать все запросы на сокет, SOMAXCONN устанавливает максимальный
   // размер очереди ожидающих соединений
   if (listen(socketListener, SOMAXCONN) == -1) {
     throw exceptions::SocketCantListen();
   }
-  std::cout << "Server listening\n";
+  std::cout << "Server is listening\n";
 }
 
 void Server::handleRequest() {
@@ -50,32 +37,62 @@ void Server::handleRequest() {
   int bytes_read;
 
   while (true) {
-    std::cout << "Server before accept\n";
     // Приняли подключение к сокету слушателю и создали новый дескриптор для
     // сокета обработчика
-    std::cout << "serv_port (htohs) = " << ntohs(sockaddr.sin_port) << "\n";
-    std::cout << "sin_fam = " << sockaddr.sin_family << "\n";
-    std::cout << "sin_addr.s_addr = " << sockaddr.sin_addr.s_addr << "\n";
-    std::cout << "sin_zero = " << sockaddr.sin_zero << "\n";
     handlerSocket = accept(socketListener, NULL, NULL);
     if (handlerSocket < 0) {
       throw exceptions::CantCreateHandlerSocket();
     }
-    std::cout << "Server after accept\n";
     while (true) {
-      std::cout << "Server reading\n";
       // Считали данные переданные на сокет обработчик в буфер
       // Ответ - число считанных байт (0 при разрыве соединения или 0
       // отправленных байт и -1 при ошибке)
+
+      // Если сервер не может получить данные 10 секунд, обвали соединение
       bytes_read = recv(handlerSocket, buf, 1024, 0);
       if (bytes_read <= 0)
         break;
       else {
-        std::cout << " server got message " << buf << "\n";
+        std::cout << "Server got message: " << buf << "\n";
       }
-      // Отправили обратно
-      send(handlerSocket, buf, bytes_read, 0);
-      // Это отлично, но кто будет чистить буфер?
+
+      // TODO: Составление сообщений нужно вынести в отдельную функцию
+      // + разобраться в том, как работает эта функция
+
+      // std::string str = "Server got your message: ";
+      // size_t answer_size =
+      //     str.length() + bytes_read + 1; // +1 для null-терминатора
+      // char *answer = new char[answer_size];
+      // std::memcpy(answer, str.c_str(), str.length());
+      // std::memcpy(answer + str.length(), buf, bytes_read);
+      // answer[answer_size - 1] = '\0';
+      // std::cout << answer << "\n";
+
+      size_t answer_size = bytes_read; // +1 для null-терминатора
+      char *answer = new char[answer_size];
+      std::memcpy(answer, buf, bytes_read);
+      answer[answer_size - 1] = '\0';
+      // std::cout << answer << "\n";
+
+      // Похоже сервер не успевает передать весь буффер и отправляет кусками
+
+      sleep(5);
+
+      // + if на проверку отправки. Если клиент разорвал соединение, ошибки быть
+      // не должно. поставить слип на 5 сек и порвать соединение на клиенте и
+      // посмотреть что будет. Думаю, тут не нужны исключения
+
+      // Это условие гарантирует отправку данных клиенту от сервера, но она не
+      // гарантирует получение данных клиентом. В момент разрыва соединения
+      // клиента, она не будет выполнена Так что она не используется
+      if (send(handlerSocket, answer, answer_size, 0) == -1) {
+        std::cout << "ERROR: Couldn't send message to client\n";
+      }
+
+      // Очищаем память
+      delete[] answer;
+
+      // Это отлично, но кто будет чистить буфер клиента?
     }
     close(handlerSocket);
   }
