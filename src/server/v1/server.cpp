@@ -27,7 +27,7 @@ void Server::handleRequest() {
 
   while (true) {
     handlerSocket = accept(socketListener, NULL, NULL);
-    if (handlerSocket < 0) {
+    if (handlerSocket == -1) {
       throw exceptions::CantCreateHandlerSocket();
     }
     while (true) {
